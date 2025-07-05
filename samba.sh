@@ -4,7 +4,8 @@
 # Desarrollado por MondoBoricua para la comunidad de Proxmox
 # Versión: 1.0
 
-set -e  # Salir si hay algún error
+# No usar set -e en modo automático para permitir continuar con errores menores
+# set -e  # Salir si hay algún error
 
 # Colores para output - pa' que se vea bonito
 RED='\033[0;31m'
@@ -123,6 +124,21 @@ get_user_input() {
     print_success "Configuración recopilada correctamente"
 }
 
+# Función para configurar permisos seguros (compatible con NTFS)
+safe_chmod() {
+    local target="$1"
+    local permissions="$2"
+    
+    if is_ntfs_filesystem "$target"; then
+        log_debug "Directorio $target está en NTFS, omitiendo chmod"
+        print_warning "Directorio $target está en NTFS - permisos Unix no aplicables"
+        return 0
+    else
+        log_debug "Aplicando chmod $permissions a $target"
+        chmod "$permissions" "$target"
+    fi
+}
+
 # Crear estructura de directorios
 create_directories() {
     print_header "Creando Estructura de Directorios"
@@ -132,36 +148,102 @@ create_directories() {
     mkdir -p /opt/samba
     mkdir -p /var/log/samba
     
+    # Verificar si hay mapeos de NTFS
+    if mount | grep -q "ntfs\|fuseblk"; then
+        print_message "Detectados sistemas de archivos NTFS montados"
+        log_debug "Sistemas de archivos montados:"
+        mount | grep -E "ntfs|fuseblk" | while read line; do
+            log_debug "  $line"
+        done
+    fi
+    
     # Directorios para compartidos
     if [[ $CREATE_PUBLIC == "s" || $CREATE_PUBLIC == "S" ]]; then
         mkdir -p /srv/samba/public
-        chmod 777 /srv/samba/public
-        print_message "Directorio público creado: /srv/samba/public"
+        safe_chmod /srv/samba/public 777
+        if is_ntfs_filesystem /srv/samba/public; then
+            print_message "Directorio público creado: /srv/samba/public (NTFS - permisos manejados por Samba)"
+        else
+            print_message "Directorio público creado: /srv/samba/public"
+        fi
     fi
     
     if [[ $CREATE_PRIVATE == "s" || $CREATE_PRIVATE == "S" ]]; then
         mkdir -p /srv/samba/private
-        chmod 770 /srv/samba/private
-        print_message "Directorio privado creado: /srv/samba/private"
+        safe_chmod /srv/samba/private 770
+        if is_ntfs_filesystem /srv/samba/private; then
+            print_message "Directorio privado creado: /srv/samba/private (NTFS - permisos manejados por Samba)"
+        else
+            print_message "Directorio privado creado: /srv/samba/private"
+        fi
     fi
     
     # Directorio para usuarios
     mkdir -p /srv/samba/users
-    chmod 755 /srv/samba/users
+    safe_chmod /srv/samba/users 755
     
-    print_success "Estructura de directorios creada"
+    print_success "Estructura de directorios creada (compatible con NTFS)"
+}
+
+# Función para detectar si un directorio está en NTFS
+is_ntfs_filesystem() {
+    local dir="$1"
+    local fs_type=$(df -T "$dir" 2>/dev/null | tail -1 | awk '{print $2}')
+    [[ "$fs_type" == "ntfs" || "$fs_type" == "fuseblk" ]]
+}
+
+# Función para configurar permisos seguros
+safe_chown() {
+    local target="$1"
+    local owner="$2"
+    
+    if is_ntfs_filesystem "$target"; then
+        log_debug "Directorio $target está en NTFS, omitiendo chown"
+        print_warning "Directorio $target está en NTFS - no se pueden cambiar permisos Unix"
+        return 0
+    else
+        log_debug "Aplicando chown a $target"
+        chown "$owner" "$target"
+    fi
 }
 
 # Crear grupo de Samba
 create_samba_group() {
     print_message "Creando grupo sambashare..."
-    groupadd -f sambashare
     
-    # Establecer permisos en directorios
-    chown -R root:sambashare /srv/samba/
+    # Crear grupo si no existe
+    if ! getent group sambashare > /dev/null 2>&1; then
+        groupadd sambashare
+        print_message "Grupo sambashare creado"
+    else
+        print_message "Grupo sambashare ya existe"
+    fi
     
-    if [[ $CREATE_PRIVATE == "s" || $CREATE_PRIVATE == "S" ]]; then
-        chgrp sambashare /srv/samba/private
+    # Establecer permisos en directorios con detección de NTFS
+    print_message "Configurando permisos de directorios..."
+    
+    if [ -d /srv/samba ]; then
+        # Verificar si /srv/samba está en NTFS
+        if is_ntfs_filesystem /srv/samba; then
+            print_warning "/srv/samba está en sistema de archivos NTFS"
+            print_message "Los permisos Unix no se aplicarán, pero Samba funcionará correctamente"
+        else
+            # Solo aplicar chown si no es NTFS
+            safe_chown "/srv/samba" "root:sambashare" || {
+                print_warning "Error al cambiar permisos de /srv/samba/, continuando..."
+            }
+            
+            if [[ $CREATE_PRIVATE == "s" || $CREATE_PRIVATE == "S" ]] && [ -d /srv/samba/private ]; then
+                safe_chown "/srv/samba/private" ":sambashare" || {
+                    print_warning "Error al cambiar grupo de /srv/samba/private, continuando..."
+                }
+            fi
+        fi
+        
+        print_success "Permisos configurados (compatibles con el sistema de archivos)"
+    else
+        print_error "Directorio /srv/samba no existe"
+        return 1
     fi
 }
 
@@ -188,8 +270,8 @@ create_users() {
         
         # Crear directorio personal
         mkdir -p "/srv/samba/users/$ADMIN_USER"
-        chown "$ADMIN_USER:sambashare" "/srv/samba/users/$ADMIN_USER"
-        chmod 755 "/srv/samba/users/$ADMIN_USER"
+        safe_chown "/srv/samba/users/$ADMIN_USER" "$ADMIN_USER:sambashare"
+        safe_chmod "/srv/samba/users/$ADMIN_USER" 755
         
         print_success "Usuario administrador $ADMIN_USER creado correctamente"
     fi
@@ -336,27 +418,65 @@ EOF
 configure_services() {
     print_header "Configurando Servicios"
     
-    # Habilitar y iniciar servicios de Samba
-    systemctl enable smbd
-    systemctl enable nmbd
-    systemctl start smbd
-    systemctl start nmbd
-    
-    # Verificar que los servicios estén corriendo
-    if systemctl is-active --quiet smbd && systemctl is-active --quiet nmbd; then
-        print_success "Servicios de Samba iniciados correctamente"
+    # Habilitar servicios de Samba
+    print_message "Habilitando servicios de Samba..."
+    if systemctl enable smbd; then
+        print_message "Servicio smbd habilitado"
     else
-        print_error "Error al iniciar los servicios de Samba"
-        systemctl status smbd
-        systemctl status nmbd
-        exit 1
+        print_warning "Error al habilitar smbd, continuando..."
+    fi
+    
+    if systemctl enable nmbd; then
+        print_message "Servicio nmbd habilitado"
+    else
+        print_warning "Error al habilitar nmbd, continuando..."
+    fi
+    
+    # Iniciar servicios de Samba
+    print_message "Iniciando servicios de Samba..."
+    
+    # Intentar iniciar smbd
+    if systemctl start smbd; then
+        print_message "Servicio smbd iniciado"
+    else
+        print_error "Error al iniciar smbd"
+        systemctl status smbd --no-pager -l
+        return 1
+    fi
+    
+    # Intentar iniciar nmbd
+    if systemctl start nmbd; then
+        print_message "Servicio nmbd iniciado"
+    else
+        print_warning "Error al iniciar nmbd, continuando sin NetBIOS..."
+        systemctl status nmbd --no-pager -l
+    fi
+    
+    # Verificar que al menos smbd esté corriendo
+    sleep 2  # Dar tiempo para que los servicios se inicien
+    
+    if systemctl is-active --quiet smbd; then
+        print_success "Servicios de Samba configurados correctamente"
+        
+        # Mostrar estado de los servicios
+        print_message "Estado de servicios:"
+        systemctl is-active smbd && echo "  ✅ smbd: Activo" || echo "  ❌ smbd: Inactivo"
+        systemctl is-active nmbd && echo "  ✅ nmbd: Activo" || echo "  ⚠️  nmbd: Inactivo"
+    else
+        print_error "El servicio principal smbd no está corriendo"
+        return 1
     fi
     
     # Configurar firewall si UFW está instalado y activo
-    if command -v ufw &> /dev/null && ufw status | grep -q "Status: active"; then
+    if command -v ufw &> /dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
         print_message "Configurando firewall UFW..."
-        ufw allow samba
-        print_success "Reglas de firewall configuradas"
+        if ufw allow samba 2>/dev/null; then
+            print_success "Reglas de firewall configuradas"
+        else
+            print_warning "Error al configurar firewall, continuando..."
+        fi
+    else
+        print_message "UFW no está activo o no está instalado"
     fi
 }
 
@@ -772,6 +892,30 @@ show_final_info() {
     print_success "¡Listo pa' usar! Tu servidor Samba está funcionando perfectamente."
 }
 
+# Función de logging para debug
+log_debug() {
+    if [ "${DEBUG_MODE:-false}" = true ]; then
+        echo -e "${BLUE}[DEBUG]${NC} $1" >&2
+    fi
+}
+
+# Función para ejecutar comandos con logging
+run_command() {
+    local cmd="$1"
+    local description="$2"
+    
+    log_debug "Ejecutando: $cmd"
+    
+    if eval "$cmd"; then
+        log_debug "$description - ÉXITO"
+        return 0
+    else
+        local exit_code=$?
+        log_debug "$description - ERROR (código: $exit_code)"
+        return $exit_code
+    fi
+}
+
 # Configuración automática para modo no interactivo
 setup_auto_config() {
     # Configuración por defecto para instalación automática
@@ -784,6 +928,10 @@ setup_auto_config() {
     print_message "Modo automático activado - usando configuración por defecto"
     print_message "Servidor: $SERVER_NAME, Grupo: $WORKGROUP"
     print_message "Recursos: público y privado (sin usuario admin)"
+    
+    # Activar modo debug en automático para mejor diagnóstico
+    DEBUG_MODE=true
+    log_debug "Modo debug activado para instalación automática"
 }
 
 # Función principal
@@ -823,16 +971,57 @@ main() {
         get_user_input
     fi
     
-    # Proceso de instalación
-    install_dependencies
-    create_directories
-    create_samba_group
-    create_users
-    configure_samba
-    configure_services
-    create_management_scripts
-    create_welcome_screen
-    create_backup_script
+    # Proceso de instalación con manejo de errores
+    log_debug "Iniciando proceso de instalación..."
+    
+    print_message "📦 Instalando dependencias..."
+    if ! install_dependencies; then
+        print_error "Error crítico al instalar dependencias"
+        exit 1
+    fi
+    
+    print_message "📁 Creando directorios..."
+    if ! create_directories; then
+        print_error "Error crítico al crear directorios"
+        exit 1
+    fi
+    
+    print_message "👥 Configurando grupo de Samba..."
+    if ! create_samba_group; then
+        print_warning "Error al configurar grupo, continuando..."
+    fi
+    
+    print_message "👤 Creando usuarios..."
+    if ! create_users; then
+        print_warning "Error al crear usuarios, continuando..."
+    fi
+    
+    print_message "⚙️ Configurando Samba..."
+    if ! configure_samba; then
+        print_error "Error crítico al configurar Samba"
+        exit 1
+    fi
+    
+    print_message "🔄 Configurando servicios..."
+    if ! configure_services; then
+        print_error "Error crítico al configurar servicios"
+        exit 1
+    fi
+    
+    print_message "🛠️ Creando scripts de gestión..."
+    if ! create_management_scripts; then
+        print_warning "Error al crear scripts de gestión, continuando..."
+    fi
+    
+    print_message "🎉 Creando pantalla de bienvenida..."
+    if ! create_welcome_screen; then
+        print_warning "Error al crear pantalla de bienvenida, continuando..."
+    fi
+    
+    print_message "💾 Creando script de backup..."
+    if ! create_backup_script; then
+        print_warning "Error al crear script de backup, continuando..."
+    fi
     
     # Información final
     show_final_info
