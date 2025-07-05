@@ -268,10 +268,13 @@ create_container() {
     print_message "Creando contenedor $CTID..."
     
     # Comando base para crear el contenedor
+    # Extraer solo el número del tamaño del disco (quitar la G si existe)
+    DISK_SIZE_NUM=$(echo "$DISK_SIZE" | sed 's/[^0-9]//g')
+    
     CREATE_CMD="pct create $CTID /var/lib/vz/template/cache/$TEMPLATE \
         --hostname $HOSTNAME \
         --storage $STORAGE \
-        --rootfs $STORAGE:$DISK_SIZE \
+        --rootfs $STORAGE:$DISK_SIZE_NUM \
         --password $PASSWORD \
         --net0 name=eth0,bridge=$BRIDGE,$NET_CONFIG \
         --memory $MEMORY \
