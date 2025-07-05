@@ -262,7 +262,7 @@ main() {
     print_commands
     
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║${NC}            Desarrollado con ❤️  por MondoBoricua              ${PURPLE}║${NC}"
+    echo -e "${PURPLE}║${NC}        Desarrollado  con mucho ☕ por MondoBoricua              ${PURPLE}║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
 }
