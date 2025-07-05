@@ -386,8 +386,8 @@ install_samba() {
     pct exec $CTID -- bash -c "
         export DEBIAN_FRONTEND=noninteractive
         
-        # Configuración automática para el script
-        echo 's' | /tmp/samba.sh || {
+        # Ejecutar en modo automático
+        /tmp/samba.sh --auto || {
             echo 'Error en la instalación de Samba'
             exit 1
         }

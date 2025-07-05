@@ -772,8 +772,42 @@ show_final_info() {
     print_success "¡Listo pa' usar! Tu servidor Samba está funcionando perfectamente."
 }
 
+# Configuración automática para modo no interactivo
+setup_auto_config() {
+    # Configuración por defecto para instalación automática
+    SERVER_NAME="samba-server"
+    WORKGROUP="WORKGROUP"
+    CREATE_ADMIN="n"  # No crear usuario admin en modo auto
+    CREATE_PUBLIC="s"
+    CREATE_PRIVATE="s"
+    
+    print_message "Modo automático activado - usando configuración por defecto"
+    print_message "Servidor: $SERVER_NAME, Grupo: $WORKGROUP"
+    print_message "Recursos: público y privado (sin usuario admin)"
+}
+
 # Función principal
 main() {
+    # Verificar si se ejecuta en modo automático
+    AUTO_MODE=false
+    for arg in "$@"; do
+        case $arg in
+            --auto)
+                AUTO_MODE=true
+                shift
+                ;;
+            --help|-h)
+                echo "🗂️ Instalador de Samba para Proxmox LXC"
+                echo "Uso: $0 [--auto] [--help]"
+                echo
+                echo "Opciones:"
+                echo "  --auto    Instalación automática sin interacción"
+                echo "  --help    Mostrar esta ayuda"
+                exit 0
+                ;;
+        esac
+    done
+    
     print_header "🗂️ Instalador de Samba para Proxmox LXC"
     echo -e "${CYAN}Desarrollado por MondoBoricua para la comunidad${NC}"
     echo
@@ -782,8 +816,14 @@ main() {
     check_root
     detect_os
     
+    # Configuración según el modo
+    if [ "$AUTO_MODE" = true ]; then
+        setup_auto_config
+    else
+        get_user_input
+    fi
+    
     # Proceso de instalación
-    get_user_input
     install_dependencies
     create_directories
     create_samba_group
@@ -797,13 +837,17 @@ main() {
     # Información final
     show_final_info
     
-    # Ejecutar pantalla de bienvenida
-    echo
-    read -p "¿Quieres ver la pantalla de bienvenida ahora? (s/n) [s]: " SHOW_WELCOME
-    SHOW_WELCOME=${SHOW_WELCOME:-s}
-    
-    if [[ $SHOW_WELCOME == "s" || $SHOW_WELCOME == "S" ]]; then
-        /opt/samba/welcome.sh
+    # Ejecutar pantalla de bienvenida solo en modo interactivo
+    if [ "$AUTO_MODE" = false ]; then
+        echo
+        read -p "¿Quieres ver la pantalla de bienvenida ahora? (s/n) [s]: " SHOW_WELCOME
+        SHOW_WELCOME=${SHOW_WELCOME:-s}
+        
+        if [[ $SHOW_WELCOME == "s" || $SHOW_WELCOME == "S" ]]; then
+            /opt/samba/welcome.sh
+        fi
+    else
+        print_success "Instalación automática completada. Usa 'samba-info' para ver el estado."
     fi
 }
 
