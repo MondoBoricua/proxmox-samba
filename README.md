@@ -1,26 +1,26 @@
-# Samba Server for Proxmox LXC
+# 🗂️ Samba Server for Proxmox LXC
 
 **[English](#english) | [Español](#español)**
 
 ---
 
 <a name="english"></a>
-## English
+## 🇺🇸 English
 
 An automated script to create and configure Samba servers in Proxmox LXC containers, perfect for sharing files on your local network without complications.
 
-### Requirements
+### 📋 Requirements
 
-* **Proxmox VE** (any recent version)
-* **LXC Template** (Ubuntu 22.04 or Debian 12 - automatically detected)
+* **Proxmox VE 8.x / 9.x** (tested and working)
+* **LXC Template** (Ubuntu 22.04, Debian 12 or Debian 13 - automatically detected)
 * **Network access** for the container
 * **Folders to share** (optional - can be created during installation)
 
-### Quick Installation
+### 🚀 Quick Installation
 
-#### Method 1: Complete Automatic Installation (RECOMMENDED!)
+#### Method 1: Complete Automatic Installation (RECOMMENDED!) 🎯
 
-**Option A: Super Fast (Two steps)**
+**Option A: Super Fast (Two steps)** ⚡
 
 ```bash
 # Step 1: Download the installer
@@ -32,7 +32,7 @@ bash /tmp/proxmox-auto-install.sh
 
 > **Note**: The first command downloads the installer, the second runs it. This avoids issues with pipes.
 
-**Option B: Download and Run**
+**Option B: Download and Run** 📥
 
 ```bash
 # From Proxmox host (SSH or console)
@@ -43,18 +43,18 @@ chmod +x proxmox-auto-install.sh
 
 **What does this script do?**
 
-* [OK] Creates the LXC container automatically
-* [OK] Detects and uses the best available template (Ubuntu 22.04 or Debian 12)
-* [OK] Configures network and storage
-* [OK] Installs and configures Samba
-* [OK] Creates default shared resources
-* [OK] Configures users and permissions
-* [OK] Enables autoboot (starts automatically with Proxmox)
-* [OK] Configures console autologin (no password)
-* [OK] Default password: `samba123` (customizable)
-* [OK] Creates welcome screen with server information
-* [OK] Configures secure and public shares
-* [OK] Everything ready in 5 minutes!
+* ✅ Creates the LXC container automatically
+* ✅ Detects and uses the best available template (Ubuntu 22.04, Debian 12/13)
+* ✅ Configures network and storage
+* ✅ Installs and configures Samba
+* ✅ Creates default shared resources
+* ✅ Configures users and permissions
+* ✅ Enables autoboot (starts automatically with Proxmox)
+* ✅ Configures console autologin (no password)
+* ✅ Default password: `samba123` (customizable)
+* ✅ Creates welcome screen with server information
+* ✅ Configures secure and public shares
+* ✅ Everything ready in 5 minutes!
 
 #### Method 2: Manual Installation in Existing Container
 
@@ -95,7 +95,7 @@ chmod +x samba.sh
 sudo ./samba.sh
 ```
 
-### Configuration During Installation
+### ⚙️ Configuration During Installation
 
 The script will ask for:
 
@@ -105,7 +105,7 @@ The script will ask for:
 * **Shared resources**: Folders to share and their permissions
 * **Folder mapping**: If you want to map Proxmox host folders
 
-### What the Script Does
+### 🔧 What the Script Does
 
 The installer automatically:
 
@@ -117,7 +117,7 @@ The installer automatically:
 6. **Starts Samba services** automatically
 7. **Creates management tools** and monitoring
 
-### Created Structure
+### 📁 Created Structure
 
 After installation you will find:
 
@@ -139,9 +139,9 @@ After installation you will find:
 /var/log/samba/           # Server logs
 ```
 
-### Container Access
+### 🔓 Container Access
 
-#### Proxmox Console (Recommended)
+#### 🖥️ Proxmox Console (Recommended)
 
 ```bash
 # Direct access without password (autologin enabled)
@@ -160,22 +160,22 @@ ssh root@CONTAINER_IP
 
 The container starts automatically when Proxmox boots.
 
-### Welcome Screen
+### 🖥️ Welcome Screen
 
 When you enter the container (`pct enter [ID]`), you will automatically see:
 
-* Server IP and active ports
-* Configured users
-* Available shared resources
-* Service status
-* Active connection statistics
-* Available management commands
+* 🌐 Server IP and active ports
+* 👥 Configured users
+* 📂 Available shared resources
+* 🔄 Service status
+* 📊 Active connection statistics
+* 🛠️ Available management commands
 
 **Quick command**: Type `samba-info` at any time to see the information.
 
-### Verify it Works
+### 🔍 Verify it Works
 
-#### Check the Service
+#### ✅ Check the Service
 
 ```bash
 # See if Samba is active
@@ -201,7 +201,7 @@ smbclient //CONTAINER_IP/public -U user
 sudo mount -t cifs //CONTAINER_IP/public /mnt/samba -o username=user
 ```
 
-### User Management
+### 👥 User Management
 
 ```bash
 # Create new user
@@ -217,7 +217,7 @@ sudo mount -t cifs //CONTAINER_IP/public /mnt/samba -o username=user
 /opt/samba/samba-manager.sh remove-user user
 ```
 
-### Advanced Management
+### 🛠️ Advanced Management
 
 #### Add New Shared Resources
 
@@ -244,7 +244,7 @@ pct set [CONTAINER_ID] -mp0 /path/on/host,mp=/srv/samba/host-data
     valid users = @sambashare
 ```
 
-### Troubleshooting
+### 🛠️ Troubleshooting
 
 #### Installer Issues
 
@@ -282,7 +282,7 @@ smbpasswd -x user
 smbpasswd -a user
 ```
 
-### Backup and Restore
+### 🔄 Backup and Restore
 
 #### Create Backup
 
@@ -302,7 +302,7 @@ tar -xzf samba-backup-YYYYMMDD.tar.gz -C /
 systemctl restart smbd nmbd
 ```
 
-### Uninstall
+### 🗑️ Uninstall
 
 If you need to remove Samba:
 
@@ -320,9 +320,9 @@ rm -rf /srv/samba/
 rm -rf /opt/samba/
 ```
 
-### Important Notes
+### 📝 Important Notes
 
-* **Compatibility**: Works with Ubuntu 22.04 and Debian 12 (automatic detection)
+* **Compatibility**: Works with Proxmox VE 8.x and 9.x, Ubuntu 22.04, Debian 12 and Debian 13
 * **Templates**: The script automatically finds the best available template
 * **Autologin**: Proxmox console does not require password (configured automatically)
 * **SSH Password**: Default is `samba123` (can be changed during installation)
@@ -335,22 +335,22 @@ rm -rf /opt/samba/
 ---
 
 <a name="español"></a>
-## Español
+## 🇪🇸 Español
 
 Un script automatizado para crear y configurar servidores Samba en contenedores LXC de Proxmox, perfecto para compartir archivos en tu red local sin complicaciones.
 
-### Requisitos
+### 📋 Requisitos
 
-* **Proxmox VE** (cualquier version reciente)
-* **Template LXC** (Ubuntu 22.04 o Debian 12 - se detecta automaticamente)
+* **Proxmox VE 8.x / 9.x** (probado y funcionando)
+* **Template LXC** (Ubuntu 22.04, Debian 12 o Debian 13 - se detecta automaticamente)
 * **Acceso de red** para el contenedor
 * **Carpetas a compartir** (opcional - se pueden crear durante la instalacion)
 
-### Instalacion Rapida
+### 🚀 Instalacion Rapida
 
-#### Metodo 1: Instalacion Automatica Completa (RECOMENDADO!)
+#### Metodo 1: Instalacion Automatica Completa (RECOMENDADO!) 🎯
 
-**Opcion A: Super Rapida (Dos pasos)**
+**Opcion A: Super Rapida (Dos pasos)** ⚡
 
 ```bash
 # Paso 1: Descargar el instalador
@@ -362,7 +362,7 @@ bash /tmp/proxmox-auto-install.sh
 
 > **Nota**: El primer comando descarga el instalador, el segundo lo ejecuta. Asi evitamos problemas con pipes.
 
-**Opcion B: Descarga y Ejecuta**
+**Opcion B: Descarga y Ejecuta** 📥
 
 ```bash
 # Desde el host Proxmox (SSH o consola)
@@ -373,18 +373,18 @@ chmod +x proxmox-auto-install.sh
 
 **Que hace este script?**
 
-* [OK] Crea el contenedor LXC automaticamente
-* [OK] Detecta y usa el mejor template disponible (Ubuntu 22.04 o Debian 12)
-* [OK] Configura la red y almacenamiento
-* [OK] Instala y configura Samba
-* [OK] Crea recursos compartidos predeterminados
-* [OK] Configura usuarios y permisos
-* [OK] Habilita autoboot (se inicia automaticamente con Proxmox)
-* [OK] Configura autologin en consola (sin contrasena)
-* [OK] Contrasena por defecto: `samba123` (personalizable)
-* [OK] Crea pantalla de bienvenida con informacion del servidor
-* [OK] Configura compartidos seguros y publicos
-* [OK] Todo listo en 5 minutos!
+* ✅ Crea el contenedor LXC automaticamente
+* ✅ Detecta y usa el mejor template disponible (Ubuntu 22.04, Debian 12/13)
+* ✅ Configura la red y almacenamiento
+* ✅ Instala y configura Samba
+* ✅ Crea recursos compartidos predeterminados
+* ✅ Configura usuarios y permisos
+* ✅ Habilita autoboot (se inicia automaticamente con Proxmox)
+* ✅ Configura autologin en consola (sin contrasena)
+* ✅ Contrasena por defecto: `samba123` (personalizable)
+* ✅ Crea pantalla de bienvenida con informacion del servidor
+* ✅ Configura compartidos seguros y publicos
+* ✅ Todo listo en 5 minutos!
 
 #### Metodo 2: Instalacion Manual en Contenedor Existente
 
@@ -425,7 +425,7 @@ chmod +x samba.sh
 sudo ./samba.sh
 ```
 
-### Configuracion Durante la Instalacion
+### ⚙️ Configuracion Durante la Instalacion
 
 El script te pedira:
 
@@ -435,7 +435,7 @@ El script te pedira:
 * **Recursos compartidos**: Carpetas a compartir y sus permisos
 * **Mapeo de carpetas**: Si quieres mapear carpetas del host Proxmox
 
-### Lo que Hace el Script
+### 🔧 Lo que Hace el Script
 
 El instalador automaticamente:
 
@@ -447,7 +447,7 @@ El instalador automaticamente:
 6. **Inicia los servicios** Samba automaticamente
 7. **Crea herramientas** de gestion y monitoreo
 
-### Estructura Creada
+### 📁 Estructura Creada
 
 Despues de la instalacion encontraras:
 
@@ -469,9 +469,9 @@ Despues de la instalacion encontraras:
 /var/log/samba/           # Logs del servidor
 ```
 
-### Acceso al Contenedor
+### 🔓 Acceso al Contenedor
 
-#### Consola Proxmox (Recomendado)
+#### 🖥️ Consola Proxmox (Recomendado)
 
 ```bash
 # Acceso directo sin contrasena (autologin habilitado)
@@ -490,22 +490,22 @@ ssh root@IP_DEL_CONTENEDOR
 
 El contenedor se inicia automaticamente cuando Proxmox arranca.
 
-### Pantalla de Bienvenida
+### 🖥️ Pantalla de Bienvenida
 
 Cuando entres al contenedor (`pct enter [ID]`), veras automaticamente:
 
-* IP del servidor y puertos activos
-* Usuarios configurados
-* Recursos compartidos disponibles
-* Estado de los servicios
-* Estadisticas de conexiones activas
-* Comandos de gestion disponibles
+* 🌐 IP del servidor y puertos activos
+* 👥 Usuarios configurados
+* 📂 Recursos compartidos disponibles
+* 🔄 Estado de los servicios
+* 📊 Estadisticas de conexiones activas
+* 🛠️ Comandos de gestion disponibles
 
 **Comando rapido**: Escribe `samba-info` en cualquier momento para ver la informacion.
 
-### Verificar que Funciona
+### 🔍 Verificar que Funciona
 
-#### Comprobar el Servicio
+#### ✅ Comprobar el Servicio
 
 ```bash
 # Ver si Samba esta activo
@@ -531,7 +531,7 @@ smbclient //IP_DEL_CONTENEDOR/public -U usuario
 sudo mount -t cifs //IP_DEL_CONTENEDOR/public /mnt/samba -o username=usuario
 ```
 
-### Gestion de Usuarios
+### 👥 Gestion de Usuarios
 
 ```bash
 # Crear nuevo usuario
@@ -547,7 +547,7 @@ sudo mount -t cifs //IP_DEL_CONTENEDOR/public /mnt/samba -o username=usuario
 /opt/samba/samba-manager.sh remove-user usuario
 ```
 
-### Gestion Avanzada
+### 🛠️ Gestion Avanzada
 
 #### Agregar Nuevos Recursos Compartidos
 
@@ -574,7 +574,7 @@ pct set [ID_CONTENEDOR] -mp0 /ruta/en/host,mp=/srv/samba/host-data
     valid users = @sambashare
 ```
 
-### Solucion de Problemas
+### 🛠️ Solucion de Problemas
 
 #### Problemas con el Instalador
 
@@ -612,7 +612,7 @@ smbpasswd -x usuario
 smbpasswd -a usuario
 ```
 
-### Backup y Restauracion
+### 🔄 Backup y Restauracion
 
 #### Crear Backup
 
@@ -632,7 +632,7 @@ tar -xzf samba-backup-YYYYMMDD.tar.gz -C /
 systemctl restart smbd nmbd
 ```
 
-### Desinstalar
+### 🗑️ Desinstalar
 
 Si necesitas remover Samba:
 
@@ -650,9 +650,9 @@ rm -rf /srv/samba/
 rm -rf /opt/samba/
 ```
 
-### Notas Importantes
+### 📝 Notas Importantes
 
-* **Compatibilidad**: Funciona con Ubuntu 22.04 y Debian 12 (deteccion automatica)
+* **Compatibilidad**: Funciona con Proxmox VE 8.x y 9.x, Ubuntu 22.04, Debian 12 y Debian 13
 * **Templates**: El script busca automaticamente el mejor template disponible
 * **Autologin**: La consola de Proxmox no requiere contrasena (configurado automaticamente)
 * **Contrasena SSH**: Por defecto es `samba123` (puedes cambiarla durante la instalacion)
@@ -664,7 +664,7 @@ rm -rf /opt/samba/
 
 ---
 
-## Contributing / Contribuir
+## 🤝 Contributing / Contribuir
 
 Found a bug or have an improvement? / Encontraste un bug o tienes una mejora?
 
@@ -674,7 +674,7 @@ Found a bug or have an improvement? / Encontraste un bug o tienes una mejora?
 4. Push to the branch / Push a la rama (`git push origin feature/amazing-feature`)
 5. Create a Pull Request / Crea un Pull Request
 
-## License / Licencia
+## 📜 License / Licencia
 
 This project is under the MIT License - see the LICENSE file for details.
 
@@ -682,15 +682,15 @@ Este proyecto esta bajo la Licencia MIT - ve el archivo LICENSE para mas detalle
 
 ---
 
-**Developed for the Proxmox community**
+**Developed with ❤️ for the Proxmox community**
 
-**Desarrollado para la comunidad de Proxmox**
+**Desarrollado con ❤️ para la comunidad de Proxmox**
 
-**Made in Puerto Rico**
+**Made in 🇵🇷 Puerto Rico**
 
 ---
 
-## Additional Resources / Recursos Adicionales
+## 🔗 Additional Resources / Recursos Adicionales
 
 * [Official Samba Documentation / Documentacion oficial de Samba](https://www.samba.org/samba/docs/)
 * [Proxmox LXC Guide / Guia de Proxmox LXC](https://pve.proxmox.com/wiki/Linux_Container)
