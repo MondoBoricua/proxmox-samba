@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **📦 This repo moved to [MondoBoricua/proxmox-scripts](https://github.com/MondoBoricua/proxmox-scripts)** — all my Proxmox LXC installers now live in one repo (this one is archived; the scripts below still work). / **Este repo se movió a [proxmox-scripts](https://github.com/MondoBoricua/proxmox-scripts)** — está archivado, pero los scripts de abajo siguen funcionando.
+
 # 🗂️ Samba Server for Proxmox LXC
 
 <p>
